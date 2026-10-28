@@ -90,6 +90,12 @@ for (let i = 0; i < 50 && !seen.questions.some((e) => e.action === "delete"); i+
 const removal = seen.questions.find((e) => e.action === "delete")
 check("host removal reaches the audience live", removal?.record.id === removable.id, `${removal?.at - t4} ms`)
 
+const staged = await host.collection("rooms").update(room.id, { spotlight: question.id })
+check("host puts a question on stage", staged.spotlight === question.id)
+check("audience cannot change the stage", (await expectFail(audienceA.collection("rooms").update(room.id, { spotlight: "" }))) !== null)
+const foreign = await audienceA.collection("questions").create({ room: otherRoom.id, text: "Question from another room" })
+check("host cannot stage another room's question", (await expectFail(host.collection("rooms").update(room.id, { spotlight: foreign.id }))) !== null)
+check("host clears the stage", (await host.collection("rooms").update(room.id, { spotlight: "" })).spotlight === "")
 await host.collection("rooms").update(room.id, { open: false })
 check("closed room refuses questions", (await expectFail(audienceA.collection("questions").create({ room: room.id, text: "Too late?" }))) !== null)
 check("closed room refuses reactions", (await expectFail(audienceA.collection("reactions").create({ room: room.id, emoji: "fire" }))) !== null)

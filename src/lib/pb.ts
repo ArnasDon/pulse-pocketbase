@@ -20,6 +20,7 @@ export interface Room extends RecordModel {
   title: string
   owner: string
   open: boolean
+  spotlight: string
 }
 
 export interface Question extends RecordModel {
@@ -41,6 +42,7 @@ export interface Reaction extends RecordModel {
 }
 
 const VOTER_KEY = "pulse.voter"
+const MINE_KEY = "pulse.mine"
 
 function readVoterId() {
   try {
@@ -76,4 +78,41 @@ export function errorMessage(error: unknown) {
     if (response?.message) return response.message
   }
   return error instanceof Error ? error.message : "Something went wrong"
+}
+
+export function readMine(): string[] {
+  try {
+    return JSON.parse(localStorage.getItem(MINE_KEY) ?? "[]")
+  } catch {
+    return []
+  }
+}
+
+export function rememberMine(id: string) {
+  try {
+    localStorage.setItem(MINE_KEY, JSON.stringify([...readMine(), id].slice(-200)))
+  } catch {
+    return
+  }
+}
+
+export async function signInOrUp(email: string, password: string) {
+  try {
+    return await pb.collection("users").authWithPassword(email, password)
+  } catch (signInError) {
+    try {
+      await pb.collection("users").create({ email, password, passwordConfirm: password })
+    } catch {
+      throw signInError
+    }
+    return pb.collection("users").authWithPassword(email, password)
+  }
+}
+
+export function toBeat(reaction: Reaction) {
+  return {
+    id: reaction.id,
+    emoji: EMOJI[reaction.emoji] ?? "•",
+    at: Math.min(Date.now(), Date.parse(reaction.created.replace(" ", "T")) || Date.now()),
+  }
 }

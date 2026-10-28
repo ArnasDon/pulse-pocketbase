@@ -10,8 +10,11 @@ const ownerOnly = "room.owner = @request.auth.id"
 
 async function upsert(def) {
   const existing = await pb.collections.getOne(def.name).catch(() => null)
+  const keep = (existing?.fields ?? []).filter(
+    (field) => !field.system && !def.fields.some((wanted) => wanted.name === field.name),
+  )
   const saved = existing
-    ? await pb.collections.update(existing.id, def)
+    ? await pb.collections.update(existing.id, { ...def, fields: [...def.fields, ...keep] })
     : await pb.collections.create(def)
   console.log(`${existing ? "updated" : "created"} ${saved.name} (${saved.id})`)
   return saved
@@ -31,7 +34,8 @@ const rooms = await upsert({
   listRule: "",
   viewRule: "",
   createRule: '@request.auth.id != "" && @request.body.owner = @request.auth.id',
-  updateRule: "owner = @request.auth.id && @request.body.owner:changed = false",
+  updateRule:
+    'owner = @request.auth.id && @request.body.owner:changed = false && (@request.body.spotlight:isset = false || @request.body.spotlight = "" || @request.body.spotlight.room = id)',
   deleteRule: "owner = @request.auth.id",
   fields: [
     { name: "code", type: "text", required: true, min: 5, max: 5, pattern: "^[A-Z0-9]{5}$" },
@@ -60,6 +64,12 @@ const questions = await upsert({
   ],
   indexes: ["CREATE INDEX idx_questions_room ON questions (room)"],
 })
+
+const roomFields = (await pb.collections.getOne(rooms.id)).fields.filter((field) => field.name !== "spotlight")
+await pb.collections.update(rooms.id, {
+  fields: [...roomFields, { name: "spotlight", type: "relation", collectionId: questions.id, maxSelect: 1, cascadeDelete: false }],
+})
+console.log("updated rooms (spotlight)")
 
 await upsert({
   name: "votes",

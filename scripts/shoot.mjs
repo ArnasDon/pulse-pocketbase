@@ -1,5 +1,6 @@
 import { spawn } from "node:child_process"
 import fs from "node:fs"
+import PocketBase from "pocketbase"
 
 const [origin, outDir] = process.argv.slice(2)
 const chrome = spawn("/Applications/Google Chrome.app/Contents/MacOS/Google Chrome", [
@@ -27,16 +28,29 @@ const send = (method, params = {}) => new Promise((r) => { const n = ++id; pendi
 await send("Runtime.enable")
 await send("Page.enable")
 
-const shots = [
-  ["home", 1280, 820, "/", false],
-  ["screen", 1600, 900, "/#/screen/PULSE", false],
-  ["room-mobile", 390, 844, "/#/r/PULSE", true],
-]
-for (const [name, width, height, path, mobile] of shots) {
+const hostCreds = JSON.parse(fs.readFileSync(new URL("../.pb-demo-host.json", import.meta.url), "utf8"))
+const hostClient = new PocketBase("https://darkcyan-hornet-959302.hostingersite.dev")
+await hostClient.collection("users").authWithPassword(hostCreds.email, hostCreds.password)
+const hostAuth = JSON.stringify({ token: hostClient.authStore.token, record: hostClient.authStore.record })
+
+const shots = (process.env.SHOTS ?? "home,home-mobile,host,room-mobile,console,screen").split(",").map((name) => ({
+  home: ["home", 1440, 900, "/", false],
+  "home-mobile": ["home-mobile", 390, 844, "/", true],
+  host: ["host", 1280, 820, "/#/host", false],
+  "room-mobile": ["room-mobile", 390, 844, "/#/r/PULSE", true],
+  console: ["console", 1440, 900, "/#/host/PULSE", false, true],
+  screen: ["screen", 1600, 900, "/#/screen/PULSE", false],
+})[name])
+for (const [name, width, height, path, mobile, signedIn] of shots) {
   await send("Emulation.setDeviceMetricsOverride", { width, height, deviceScaleFactor: mobile ? 2 : 1, mobile })
+  await send("Page.navigate", { url: origin + "/#/blank" })
+  await sleep(500)
+  await send("Runtime.evaluate", {
+    expression: signedIn ? `localStorage.setItem("pocketbase_auth", ${JSON.stringify(hostAuth)})` : `localStorage.removeItem("pocketbase_auth")`,
+  })
   await send("Page.navigate", { url: "about:blank" })
   await send("Page.navigate", { url: origin + path })
-  await sleep(7000)
+  await sleep(Number(process.env.WAIT ?? 5000))
   const { data } = await send("Page.captureScreenshot", { format: "png" })
   fs.writeFileSync(`${outDir}/${name}.png`, Buffer.from(data, "base64"))
   const info = await send("Runtime.evaluate", { expression: "document.body.innerText.slice(0, 160).replace(/\\n+/g, ' | ')", returnByValue: true })
