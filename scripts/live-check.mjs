@@ -32,32 +32,32 @@ console.log("presenter screen connected:", await evaluate("document.body.innerTe
 const audience = new PocketBase(origin)
 audience.autoCancellation(false)
 const room = await audience.collection("rooms").getFirstListItem('code = "PULSE"')
-const questionStat = "document.querySelector('dl dd')?.innerText"
-const before = Number(await evaluate(questionStat))
 const text = `Live check ${new Date().toISOString().slice(11, 19)}: can you see this?`
 const t0 = Date.now()
 const question = await audience.collection("questions").create({ room: room.id, text, author: "Live check" })
-let seenAt = null
-for (let i = 0; i < 100 && !seenAt; i++) {
-  if (Number(await evaluate(questionStat)) === before + 1) seenAt = Date.now()
-  else await sleep(25)
-}
-console.log("question counter on presenter screen updated:", seenAt ? `${seenAt - t0} ms after the POST started` : "NOT SEEN")
-
 const votes = 10
 await Promise.all(Array.from({ length: votes }, () => audience.collection("votes").create({ question: question.id, voter: crypto.randomUUID(), room: room.id })))
 await Promise.all(["fire", "rocket", "clap", "heart", "mind_blown", "laugh", "fire", "rocket"].map((emoji) => audience.collection("reactions").create({ room: room.id, emoji })))
 await sleep(900)
-const floating = await evaluate("document.querySelectorAll('.pulse-float').length")
-const topQuestion = await evaluate("document.querySelector('ol li p')?.innerText")
-console.log("floating emoji on screen:", floating)
-console.log("top question after 10 votes:", topQuestion === text ? "the new question (re-ranked live)" : topQuestion)
-const { data } = await send("Page.captureScreenshot", { format: "png" })
-fs.writeFileSync("shots/live-check.png", Buffer.from(data, "base64"))
-
 const hostCreds = JSON.parse(fs.readFileSync(new URL("../.pb-demo-host.json", import.meta.url), "utf8"))
 const host = new PocketBase(origin)
 await host.collection("users").authWithPassword(hostCreds.email, hostCreds.password)
+const emojiOnLine = await evaluate("document.querySelectorAll('.beat-in').length")
+console.log("emoji riding the pulse line:", emojiOnLine)
+const t1 = Date.now()
+await host.collection("rooms").update(room.id, { spotlight: question.id })
+let staged = null
+for (let i = 0; i < 100 && !staged; i++) {
+  if (await evaluate(`document.body.innerText.includes("ON STAGE NOW") && document.body.innerText.includes(${JSON.stringify(text)})`)) staged = Date.now()
+  else await sleep(25)
+}
+console.log("question on stage on the big screen:", staged ? `${staged - t1} ms after the host clicked` : "NOT SEEN")
+await Promise.all(["fire", "clap", "rocket"].map((emoji) => audience.collection("reactions").create({ room: room.id, emoji })))
+await sleep(1200)
+const { data } = await send("Page.captureScreenshot", { format: "png" })
+fs.writeFileSync("shots/live-check.png", Buffer.from(data, "base64"))
+
+await host.collection("rooms").update(room.id, { spotlight: "" })
 await host.collection("questions").delete(question.id)
 ws.close()
 chrome.kill()

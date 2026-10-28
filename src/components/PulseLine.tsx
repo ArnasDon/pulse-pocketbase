@@ -69,11 +69,16 @@ export function PulseLine({ beats, height = 120, windowMs = 20000, className, em
 
   let path = ""
   for (let x = 0; x <= WIDTH; x += STEP) {
-    let y = baseline + (reduced ? 0 : Math.sin(x / 23 + now / 900) * 0.8)
+    let lift = 0
     for (const bx of positions) {
       const distance = x - bx
-      if (Math.abs(distance) < 60) y -= heartbeat(distance, amplitude)
+      if (Math.abs(distance) < 60) {
+        const value = heartbeat(distance, amplitude)
+        if (Math.abs(value) > Math.abs(lift)) lift = value
+      }
     }
+    const wobble = reduced ? 0 : Math.sin(x / 23 + now / 900) * 0.8
+    const y = Math.min(height - 2, Math.max(2, baseline + wobble - lift))
     path += `${x === 0 ? "M" : "L"}${x},${y.toFixed(1)}`
   }
 

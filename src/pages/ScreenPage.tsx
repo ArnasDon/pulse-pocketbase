@@ -80,7 +80,7 @@ export function ScreenPage({ code }: { code: string }) {
       </div>
 
       <footer className="relative px-10 pb-6">
-        <p className="absolute top-0 right-10 text-sm text-muted-foreground">
+        <p className="absolute top-0 left-10 text-sm text-muted-foreground">
           <span className="font-heading text-3xl font-bold text-foreground tabular-nums">{perMinute}</span> reactions/min
         </p>
         <PulseLine beats={beats} height={170} emojiSize="2.5rem" />
