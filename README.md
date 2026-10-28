@@ -13,6 +13,7 @@ The frontend is a static Vite + React + shadcn/ui build that talks to PocketBase
 | Script | What it does |
 | --- | --- |
 | `scripts/setup-schema.mjs` | Creates or updates the collections and API rules (needs `.pb-superuser.json`) |
+| `scripts/enable-google-oauth.mjs` | Turns on Google sign-in from `.google-oauth.json` (`--disable` turns it off) |
 | `scripts/seed-demo.mjs` | Seeds the `PULSE` demo room |
 | `scripts/e2e.mjs` | 26 end-to-end checks of rules and realtime against the live site (`HTTP2=0` reproduces the HTTP/1.1 realtime hang) |
 | `scripts/hide-probe.mjs` | Shows that PocketBase drops update events a subscriber can no longer view |

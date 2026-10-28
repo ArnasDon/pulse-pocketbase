@@ -25,3 +25,4 @@ dist-ssr
 .pb-superuser.json
 .pb-demo-host.json
 shots
+.google-oauth.json

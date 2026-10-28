@@ -116,3 +116,23 @@ export function toBeat(reaction: Reaction) {
     at: Math.min(Date.now(), Date.parse(reaction.created.replace(" ", "T")) || Date.now()),
   }
 }
+
+export function useGoogleSignIn() {
+  const [available, setAvailable] = useState(false)
+  useEffect(() => {
+    pb.collection("users")
+      .listAuthMethods()
+      .then((methods) => setAvailable(methods.oauth2.enabled && methods.oauth2.providers.some((p) => p.name === "google")))
+      .catch(() => setAvailable(false))
+  }, [])
+  return available
+}
+
+export async function signInWithGoogle() {
+  const result = await pb.collection("users").authWithOAuth2({ provider: "google" })
+  const name = result.meta?.name
+  if (name && !result.record.name) {
+    await pb.collection("users").update(result.record.id, { name }).catch(() => null)
+  }
+  return result
+}
