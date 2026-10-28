@@ -37,7 +37,7 @@ export function CodeInput() {
           spellCheck={false}
           aria-invalid={Boolean(error)}
           aria-describedby={error ? "room-code-error" : undefined}
-          className="code-display h-16 flex-1 bg-card px-4 text-4xl font-bold uppercase md:text-4xl"
+          className="code-display h-16 flex-1 bg-card px-4 text-4xl font-bold uppercase placeholder:text-muted-foreground/35 md:text-4xl"
         />
         <Button type="submit" size="lg" className="h-16 px-6 text-base">
           Join <ArrowRight data-icon="inline-end" />

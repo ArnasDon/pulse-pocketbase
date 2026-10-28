@@ -56,9 +56,22 @@ function heartbeat(distance: number, amplitude: number) {
   return amplitude * (0.12 * g(-30, 8) - 0.22 * g(-9, 4) + g(0, 3.6) - 0.34 * g(8, 4) + 0.18 * g(30, 10))
 }
 
-export function PulseLine({ beats, height = 120, windowMs = 20000, className, emojiSize = "1.75rem" }: PulseLineProps) {
+function useNarrow() {
+  const [narrow, setNarrow] = useState(() => window.matchMedia("(max-width: 640px)").matches)
+  useEffect(() => {
+    const query = window.matchMedia("(max-width: 640px)")
+    const onChange = () => setNarrow(query.matches)
+    query.addEventListener("change", onChange)
+    return () => query.removeEventListener("change", onChange)
+  }, [])
+  return narrow
+}
+
+export function PulseLine({ beats, height = 120, windowMs: baseWindowMs = 20000, className, emojiSize = "1.75rem" }: PulseLineProps) {
   const reduced = useReducedMotion()
   const now = useNow(reduced)
+  const narrow = useNarrow()
+  const windowMs = narrow ? baseWindowMs * 0.4 : baseWindowMs
   const baseline = height * 0.72
   const amplitude = height * 0.55
   const visible = beats.filter((beat) => {
@@ -83,7 +96,7 @@ export function PulseLine({ beats, height = 120, windowMs = 20000, className, em
   }
 
   return (
-    <div className={cn("relative w-full select-none", className)} style={{ height }} aria-hidden>
+    <div className={cn("relative w-full select-none", className)} style={{ height, marginTop: `calc(${emojiSize} + 0.75rem)` }} aria-hidden>
       <svg viewBox={`0 0 ${WIDTH} ${height}`} preserveAspectRatio="none" className="absolute inset-0 h-full w-full overflow-visible">
         <line x1="0" x2={WIDTH} y1={baseline} y2={baseline} stroke="var(--line)" strokeWidth="1" vectorEffect="non-scaling-stroke" />
         <path d={path} fill="none" stroke="var(--beat)" strokeWidth="2.5" strokeLinejoin="round" vectorEffect="non-scaling-stroke" />
