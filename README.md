@@ -17,5 +17,6 @@ The frontend is a static Vite + React + shadcn/ui build that talks to PocketBase
 | `scripts/e2e.mjs` | 26 end-to-end checks of rules and realtime against the live site (`HTTP2=0` reproduces the HTTP/1.1 realtime hang) |
 | `scripts/hide-probe.mjs` | Shows that PocketBase drops update events a subscriber can no longer view |
 | `scripts/shoot.mjs` | Headless Chrome screenshots over CDP |
+| `scripts/live-check.mjs` | Opens the presenter screen in Chrome and checks that another client's question, votes and reactions show up live |
 
 `npm run build` writes `dist/`. The `site` branch holds that build for the Git deploy.
